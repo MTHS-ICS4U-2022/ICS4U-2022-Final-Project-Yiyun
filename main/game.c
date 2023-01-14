@@ -13,6 +13,41 @@
 #include "Background.c"
 #include "SpaceAliens.c"
 #include "MetaSprites.c"
+#include "BirdAndPipes.c"
+
+INT16 birdLocation[2];
+BYTE jumping;
+uint8_t gravity = 4;
+uint8_t currentSpeedY;
+uint8_t floorY = 100;
+
+INT8 wouldHitSurface(UINT8 positionY) {
+    if (positionY >= floorY) {
+        return floorY;
+    } else {
+        return -1;
+    }
+}
+
+
+void jump() {
+    INT8 possibleSurfaceY;
+    if (jumping == 0) {
+        jumping = 1;
+        currentSpeedY = 8;
+    }
+    // gravity slows the speed
+    currentSpeedY = currentSpeedY - gravity;
+    birdLocation[1] = birdLocation[1] - currentSpeedY;
+    possibleSurfaceY = wouldHitSurface(birdLocation[1]);
+    if (possibleSurfaceY != -1) {
+        // hit the surface
+        jumping = 0;  // stop jumping
+        move_meta_sprite(0, birdLocation[0], floorY);  // move it on the floor
+    } else {
+        move_meta_sprite(0, birdLocation[0], birdLocation[1]);
+    }
+}
 
 void main() {
 	uint8_t joypadData;
@@ -28,19 +63,21 @@ void main() {
 
     // the position of the bird
 	const int FIXED_X_POSITION_OF_BIRD = 60;
-	int birdXPosition = FIXED_X_POSITION_OF_BIRD;
-	int birdYPosition = 82;
+	birdLocation[0] = FIXED_X_POSITION_OF_BIRD;
+	birdLocation[1] = 82;
+	jumping = 0;
+	currentSpeedY = 0;
 
     // load spritesheet referenced as #0
 	// load 16 sprites from it
 	// find references in SpaceAliens
-	set_sprite_data(0, 16, SpaceAliens);
+	set_sprite_data(0, 16, BirdAndPipes);
 
     // load sprite for meta sprites(many parts)
-	set_meta_sprite_tile(0, 1, 2, 3, 4);
+	set_meta_sprite_tile(0, 2, 4, 3, 5);
 
 	// move to (88, 78)
-	move_meta_sprite(0, birdXPosition, birdYPosition);
+	move_meta_sprite(0, birdLocation[0], birdLocation[1]);
 
 	// background
     set_bkg_data(0, 43, SpaceAliens);
@@ -58,12 +95,20 @@ void main() {
 		// if the A is pressed, move sprite up(0, -1)
 		if (joypadData & J_A) {
 			if (aJustPressed == TRUE) {
-				scroll_meta_sprite(0, 0, -1);
-				birdYPosition -= 1;
-				if (birdYPosition < 24) {
-					birdYPosition = 24;
+				jump();
+				// add this because I want it can jump again in
+				// the air if I press A again
+				jumping = 0;
+				if (birdLocation[1] < 24) {
+					birdLocation[1] = 24;
 					move_meta_sprite(0, FIXED_X_POSITION_OF_BIRD, 24);
 				}
+			}
+		} else if (jumping == 1) {
+			jump();
+			if (birdLocation[1] < 24) {
+				birdLocation[1] = 24;
+				move_meta_sprite(0, FIXED_X_POSITION_OF_BIRD, 24);
 			}
 		}
 
@@ -85,8 +130,8 @@ void main() {
 		}
 
         // prevent the bird from dropping outside of the screen
-		if (birdYPosition > SCREEN_HEIGHT + 8) {
-			birdYPosition = SCREEN_HEIGHT + 8;
+		if (birdLocation[1] > SCREEN_HEIGHT + 8) {
+			birdLocation[1] = SCREEN_HEIGHT + 8;
 			move_meta_sprite(0, FIXED_X_POSITION_OF_BIRD,
 			(uint8_t)(SCREEN_HEIGHT + 8));
 		}
