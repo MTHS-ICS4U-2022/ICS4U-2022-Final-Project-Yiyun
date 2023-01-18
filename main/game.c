@@ -15,11 +15,20 @@
 #include "MetaSprites.c"
 #include "BirdAndPipes.c"
 
+typedef enum {
+	SPLASH,
+	START,
+	GAME,
+	GAME_OVER
+} screen_t;
+
 INT16 birdLocation[2];
 BYTE jumping;
+BYTE alive = 0;
 uint8_t gravity = 4;
-uint8_t currentSpeedY;
+int8_t currentSpeedY;
 uint8_t floorY = 100;
+const int FIXED_X_POSITION_OF_BIRD = 60;
 
 INT8 wouldHitSurface(UINT8 positionY) {
     if (positionY >= floorY) {
@@ -34,11 +43,10 @@ void jump() {
     INT8 possibleSurfaceY;
     if (jumping == 0) {
         jumping = 1;
-        currentSpeedY = 8;
+		birdLocation[1] -= 3;
+        birdLocation[1]--;
     }
     // gravity slows the speed
-    currentSpeedY = currentSpeedY - gravity;
-    birdLocation[1] = birdLocation[1] - currentSpeedY;
     possibleSurfaceY = wouldHitSurface(birdLocation[1]);
     if (possibleSurfaceY != -1) {
         // hit the surface
@@ -49,8 +57,42 @@ void jump() {
     }
 }
 
-void main() {
+screen_t splash() {
 	uint8_t joypadData;
+	screen_t next_screen = GAME;
+
+    set_sprite_data(0, 16, BirdAndPipes);
+
+    // load sprite for meta sprites(many parts)
+	set_meta_sprite_tile(0, 2, 4, 3, 5);
+
+	// move to (88, 78)
+	move_meta_sprite(0, 60, 82);
+
+	// background
+    set_bkg_data(0, 43, SpaceAliens);
+	set_bkg_tiles(0, 0, 32, 18, Background);
+
+    SHOW_BKG;
+	SHOW_SPRITES;
+	DISPLAY_ON;
+
+	while(1) {
+		joypadData = joypad();
+
+		if (joypadData & J_A) {
+			return next_screen;
+		}
+
+        scroll_bkg(1, 0);
+
+		wait_vbl_done();
+	}
+}
+
+screen_t game() {
+	uint8_t joypadData;
+	screen_t next_screen = GAME;
 
 	// check if A button is single pressed
 	bool aJustPressed = FALSE;
@@ -62,7 +104,6 @@ void main() {
 	NR51_REG = 0xFF;
 
     // the position of the bird
-	const int FIXED_X_POSITION_OF_BIRD = 60;
 	birdLocation[0] = FIXED_X_POSITION_OF_BIRD;
 	birdLocation[1] = 82;
 	jumping = 0;
@@ -95,20 +136,14 @@ void main() {
 		// if the A is pressed, move sprite up(0, -1)
 		if (joypadData & J_A) {
 			if (aJustPressed == TRUE) {
+				jumping = 0;
 				jump();
 				// add this because I want it can jump again in
 				// the air if I press A again
-				jumping = 0;
 				if (birdLocation[1] < 24) {
 					birdLocation[1] = 24;
 					move_meta_sprite(0, FIXED_X_POSITION_OF_BIRD, 24);
 				}
-			}
-		} else if (jumping == 1) {
-			jump();
-			if (birdLocation[1] < 24) {
-				birdLocation[1] = 24;
-				move_meta_sprite(0, FIXED_X_POSITION_OF_BIRD, 24);
 			}
 		}
 
@@ -134,12 +169,37 @@ void main() {
 			birdLocation[1] = SCREEN_HEIGHT + 8;
 			move_meta_sprite(0, FIXED_X_POSITION_OF_BIRD,
 			(uint8_t)(SCREEN_HEIGHT + 8));
+			alive = 1;
 		}
 
 		// scroll background -1 in X and 0 in Y
 		scroll_bkg(1, 0);
+		// bird will always move down
+		birdLocation[1]++;
+		move_meta_sprite(0, birdLocation[0], birdLocation[1]);
+
+		if (alive == 1) {
+			next_screen = GAME_OVER;
+			return next_screen;
+		}
 
 		// wait until end of frame(1/60th second)
 		wait_vbl_done();
+	}
+}
+
+void main() {
+	screen_t currentScreen = SPLASH;
+
+	NR52_REG = 0x80;
+	NR50_REG = 0x77;
+	NR51_REG = 0xFF;
+
+	while(1) {
+        if (currentScreen == SPLASH) {
+			currentScreen = splash();
+		} else if (currentScreen == GAME) {
+			currentScreen = game();
+		}
 	}
 }
