@@ -66,7 +66,7 @@ screen_t splash() {
     // load sprite for meta sprites(many parts)
 	set_meta_sprite_tile(0, 2, 4, 3, 5);
 
-	// move to (88, 78)
+	// move to (60, 82)
 	move_meta_sprite(0, 60, 82);
 
 	// background
@@ -108,6 +108,13 @@ screen_t game() {
 	birdLocation[1] = 82;
 	jumping = 0;
 	currentSpeedY = 0;
+	int pipes[5][3] = {
+		{5, 255, 255},
+		{6, 255, 255},
+		{7, 255, 255},
+		{8, 255, 255},
+		{9, 255, 255},
+	};
 
     // load spritesheet referenced as #0
 	// load 16 sprites from it
@@ -119,6 +126,18 @@ screen_t game() {
 
 	// move to (88, 78)
 	move_meta_sprite(0, birdLocation[0], birdLocation[1]);
+
+    // load sprites for pipes
+	for (int pipeCounter = 0; pipeCounter < 5; pipeCounter++) {
+		set_meta_sprite_tile(pipes[pipeCounter][0], 4, 5, 6, 7);
+	}
+
+	// move pipes out of the screen
+	for (int pipeCounter = 0; pipeCounter < 5; pipeCounter++) {
+		move_meta_sprite(pipes[pipeCounter][0],
+		pipes[pipeCounter][1],
+		pipes[pipeCounter][2]);
+	}
 
 	// background
     set_bkg_data(0, 43, SpaceAliens);
