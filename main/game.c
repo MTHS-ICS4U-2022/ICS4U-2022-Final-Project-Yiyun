@@ -8,6 +8,7 @@
 #include <gb/gb.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "GBDK_Constants.h"
 #include "Background.c"
@@ -29,6 +30,15 @@ uint8_t gravity = 4;
 int8_t currentSpeedY;
 uint8_t floorY = 100;
 const int FIXED_X_POSITION_OF_BIRD = 60;
+int pipes[5][3] = {
+	{5, 255, 255},
+	{6, 255, 255},
+	{7, 255, 255},
+	{8, 255, 255},
+	{9, 255, 255},
+};
+uint8_t pipesHeight = 0;
+uint8_t pipesSpace = 0;
 
 INT8 wouldHitSurface(UINT8 positionY) {
     if (positionY >= floorY) {
@@ -43,7 +53,7 @@ void jump() {
     INT8 possibleSurfaceY;
     if (jumping == 0) {
         jumping = 1;
-		birdLocation[1] -= 3;
+		birdLocation[1] -= 5;
         birdLocation[1]--;
     }
     // gravity slows the speed
@@ -108,13 +118,6 @@ screen_t game() {
 	birdLocation[1] = 82;
 	jumping = 0;
 	currentSpeedY = 0;
-	int pipes[5][3] = {
-		{5, 255, 255},
-		{6, 255, 255},
-		{7, 255, 255},
-		{8, 255, 255},
-		{9, 255, 255},
-	};
 
     // load spritesheet referenced as #0
 	// load 16 sprites from it
@@ -126,18 +129,6 @@ screen_t game() {
 
 	// move to (88, 78)
 	move_meta_sprite(0, birdLocation[0], birdLocation[1]);
-
-    // load sprites for pipes
-	for (int pipeCounter = 0; pipeCounter < 5; pipeCounter++) {
-		set_meta_sprite_tile(pipes[pipeCounter][0], 4, 5, 6, 7);
-	}
-
-	// move pipes out of the screen
-	for (int pipeCounter = 0; pipeCounter < 5; pipeCounter++) {
-		move_meta_sprite(pipes[pipeCounter][0],
-		pipes[pipeCounter][1],
-		pipes[pipeCounter][2]);
-	}
 
 	// background
     set_bkg_data(0, 43, SpaceAliens);
@@ -191,10 +182,35 @@ screen_t game() {
 			alive = 1;
 		}
 
+        pipesHeight = rand() % 5 + 1;
+		pipesSpace = rand() % 5 + 3;
+		for (int pipesCounter = pipesHeight; pipesCounter > 0; pipesCounter--) {
+			pipes[pipesCounter][1] = 161;
+			pipes[pipesCounter][2] = pipesCounter * 16;
+            move_meta_sprite(pipes[pipesCounter][0],
+			pipes[pipesCounter][1], pipes[pipesCounter][2]);
+
+		}
+
+		for (int pipesCounter = 0; pipesCounter < 5; pipesCounter++) {
+			if (pipes[pipesCounter][1] < 255) {
+            	pipes[pipesCounter][1] -= 10;
+				move_meta_sprite(pipes[pipesCounter][0],
+				pipes[pipesCounter][1], pipes[pipesCounter][2]);
+			}
+			if (pipes[pipesCounter][1] < 0) {
+				pipes[pipesCounter][1] = 255;
+				pipes[pipesCounter][2] = 255;
+				move_meta_sprite(pipes[pipesCounter][0],
+				pipes[pipesCounter][1], pipes[pipesCounter][2]);
+			}
+		}
+
 		// scroll background -1 in X and 0 in Y
 		scroll_bkg(1, 0);
 		// bird will always move down
 		birdLocation[1]++;
+		birdLocation[1] += 1;
 		move_meta_sprite(0, birdLocation[0], birdLocation[1]);
 
 		if (alive == 1) {
@@ -213,6 +229,21 @@ void main() {
 	NR52_REG = 0x80;
 	NR50_REG = 0x77;
 	NR51_REG = 0xFF;
+
+    set_sprite_data(0, 16, SpaceAliens);
+    // load sprites for pipes
+	for (int pipeCounter = 0; pipeCounter < 5; pipeCounter++) {
+		set_meta_sprite_tile(pipes[pipeCounter][0], 4, 5, 6, 7);
+	}
+
+	// move pipes out of the screen
+	for (int pipeCounter = 0; pipeCounter < 5; pipeCounter++) {
+		pipes[pipeCounter][1] = 255;
+		pipes[pipeCounter][2] = 255;
+		move_meta_sprite(pipes[pipeCounter][0],
+		pipes[pipeCounter][1],
+		pipes[pipeCounter][2]);
+	}
 
 	while(1) {
         if (currentScreen == SPLASH) {
