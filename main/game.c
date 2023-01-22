@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "GBDK_Constants.h"
 #include "Background.c"
@@ -37,8 +38,6 @@ int pipes[5][3] = {
 	{8, 255, 255},
 	{9, 255, 255},
 };
-uint8_t pipesHeight = 0;
-uint8_t pipesSpace = 0;
 
 INT8 wouldHitSurface(UINT8 positionY) {
     if (positionY >= floorY) {
@@ -182,8 +181,9 @@ screen_t game() {
 			alive = 1;
 		}
 
-        pipesHeight = rand() % 5 + 1;
-		pipesSpace = rand() % 5 + 3;
+        srand(time(NULL));
+        int pipesHeight = (rand() % 5 + 1);
+		int pipesSpace = (rand() % 5 + 3);
 		for (int pipesCounter = pipesHeight; pipesCounter > 0; pipesCounter--) {
 			pipes[pipesCounter][1] = 161;
 			pipes[pipesCounter][2] = pipesCounter * 16;
