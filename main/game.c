@@ -4,12 +4,12 @@
 // Created on: Dec 2022
 // This program shows the background without moving.
 
-#include <stdio.h>
 #include <gb/gb.h>
+#include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <time.h>
+#include <rand.h>
 
 #include "GBDK_Constants.h"
 #include "Background.c"
@@ -30,6 +30,7 @@ BYTE alive = 0;
 uint8_t gravity = 4;
 int8_t currentSpeedY;
 uint8_t floorY = 100;
+uint16_t seed = 0;
 const int FIXED_X_POSITION_OF_BIRD = 60;
 int pipes[5][3] = {
 	{5, 255, 255},
@@ -162,6 +163,7 @@ screen_t game() {
 				aStillPressed = TRUE;
 			} else {
 				aJustPressed = TRUE;
+				seed += 1;
 				NR10_REG=0x1C;
         		NR11_REG=0x44;
         		NR12_REG=0x42;
@@ -173,6 +175,10 @@ screen_t game() {
 			aStillPressed = FALSE;
 		}
 
+        if (seed > 255) {
+			seed = 1;
+		}
+
         // prevent the bird from dropping outside of the screen
 		if (birdLocation[1] > SCREEN_HEIGHT + 8) {
 			birdLocation[1] = SCREEN_HEIGHT + 8;
@@ -181,20 +187,20 @@ screen_t game() {
 			alive = 1;
 		}
 
-        srand(time(NULL));
-        int pipesHeight = (rand() % 5 + 1);
-		int pipesSpace = (rand() % 5 + 3);
-		for (int pipesCounter = pipesHeight; pipesCounter > 0; pipesCounter--) {
-			pipes[pipesCounter][1] = 161;
-			pipes[pipesCounter][2] = pipesCounter * 16;
-            move_meta_sprite(pipes[pipesCounter][0],
-			pipes[pipesCounter][1], pipes[pipesCounter][2]);
-
+		for (int pipesNum = 0; pipesNum < 5; pipesNum++) {
+			uint8_t pipesHeight = rand() % 5 + 1;
+			uint8_t pipesSpace = rand() % 5 + 3;
+			for (int pipesCounter = pipesHeight; pipesCounter > 0; pipesCounter--) {
+				pipes[pipesNum][1] = 161;
+				pipes[pipesNum][2] = pipesCounter * 32;
+            	move_meta_sprite(pipes[pipesNum][0],
+				pipes[pipesNum][1], pipes[pipesNum][2]);
+			}
 		}
 
 		for (int pipesCounter = 0; pipesCounter < 5; pipesCounter++) {
 			if (pipes[pipesCounter][1] < 255) {
-            	pipes[pipesCounter][1] -= 10;
+            	pipes[pipesCounter][1] -= 1;
 				move_meta_sprite(pipes[pipesCounter][0],
 				pipes[pipesCounter][1], pipes[pipesCounter][2]);
 			}
